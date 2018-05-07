@@ -1,6 +1,6 @@
 Sample code to determine patrol stations given a map.
 Coordinates are given in (x,y) pixel coordinates.
-By default assumes grid world will be 32x32 pixels. There may be some collision due to downsampling.
+By default assumes grid world will be 32x32 pixels. This can be changed with the --size argument.
 
 A frame by frame plot of the locations will be saved in figures/.
 
