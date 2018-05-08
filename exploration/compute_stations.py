@@ -39,12 +39,15 @@ def preprocess(image_path, size):
     im = cv2.resize(im,(size, size))
     # hacky, model works on a fixed size
     im = (255 * (im>128) ).astype(np.uint8)
+
+    small_im = 1*im
+
     im = cv2.resize(im,(INPUT_SIZE, INPUT_SIZE),cv2.INTER_NEAREST)
     im = (255 * (im>128) ).astype(np.uint8)
     im = imfill(im)
     im = im2double(im)
 
-    return im
+    return im, small_im
 
 
 def delta(x, epsilon):
@@ -156,7 +159,7 @@ def show(psi, x0, dx, phi, hor, gain, psi_current, name):
     #plt.imshow(psi>0,vmin=-1,vmax=1)
     #plt.imshow(psi_current>0,vmin=-1,vmax=1)
 
-    temp = psi*1
+    temp = psi*1.0
     temp[phi>2*dx] = None
     plt.contour(temp,0,colors='k')
     plt.plot(x0[:,1], x0[:,0],'b.', mfc='none')
@@ -261,6 +264,7 @@ if __name__ == '__main__':
     parser.add_argument('--size', default=32)
     args = parser.parse_args()
 
+    np.random.seed(0) 
     # initialize the model
     predict_func = OfflinePredictor(
             PredictConfig(
@@ -271,16 +275,20 @@ if __name__ == '__main__':
                 output_names=['prob']))
    
     # load the underlying map and resize to desired
-    im = preprocess(args.image_path, args.size)
+    im, small_im = preprocess(args.image_path, args.size)
 
     # create frames for animation 
-    prefix = os.path.basename(args.image_path)[:-4]
+    prefix = os.path.join(args.output_path, os.path.basename(args.image_path)[:-4])
     x0 = get_random_x0(im)
-    x0, residual = run_sequence(im, predict_func, x0, output_path = os.path.join(args.output_path, prefix) )
+    x0, residual = run_sequence(im, predict_func, x0)
 
     # vantage points are in range [0,1] so we scale back to pixels [0,args.size]
-    x0 = x0 * args.size
+   
+    cv2.imwrite(prefix + '_map.png', small_im)
+    phi =  distance(im2double(small_im)-.5, 1.0/args.size)
+    show(phi, x0, 1.0/args.size, phi, 0*phi, 0*phi, phi, prefix +'_path.png') 
 
+    x0 = x0 * args.size
     print('The patrol stations are at:')
     print(x0)    
 
