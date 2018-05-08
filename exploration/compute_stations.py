@@ -261,7 +261,7 @@ if __name__ == '__main__':
     parser.add_argument('image_path')
     parser.add_argument('--model_path',default= 'log/checkpoint')
     parser.add_argument('--output_path', default='figures/')
-    parser.add_argument('--size', default=32)
+    parser.add_argument('--size', type=int, default=32)
     args = parser.parse_args()
 
     np.random.seed(0) 
