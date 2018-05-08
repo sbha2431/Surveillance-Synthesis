@@ -282,12 +282,11 @@ if __name__ == '__main__':
     x0 = get_random_x0(im)
     x0, residual = run_sequence(im, predict_func, x0)
 
-    # vantage points are in range [0,1] so we scale back to pixels [0,args.size]
-   
-    cv2.imwrite(prefix + '_map.png', small_im)
     phi =  distance(im2double(small_im)-.5, 1.0/args.size)
     show(phi, x0, 1.0/args.size, phi, 0*phi, 0*phi, phi, prefix +'_path.png') 
+    cv2.imwrite(prefix + '_map.png', small_im)
 
+    # vantage points are in range [0,1] so we scale back to pixels [0,args.size]
     x0 = x0 * args.size
     print('The patrol stations are at:')
     print(x0)    
