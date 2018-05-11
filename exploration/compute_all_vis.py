@@ -105,7 +105,10 @@ def createCircle(center, radius, x, y):
 
 def compute_visibility_for_all(obj, h, w, radius = np.inf):
     image = obj2img(obj, h, w)
-    phi = image # do we need to convert to signed distance function? 
+    image = image * 1.0/image.max() # rescale to [0,1]
+    dx = 1.0/h
+    phi = distance( (image-.5)*2*dx, dx ) # do we need to convert to signed distance function? yes
+
     notVis = {}  # dictionary containing {position: [non visible positions] }
 
     # create a grid for circular mask 
