@@ -364,7 +364,7 @@ def get_stations(obj, h, w, predict_func, s, radius = 10, min_distance = 1):
     
     # mask limited range
     mask = createCircle(x0[-1,:], radius*scale, x,y)
-    predicted_gain = predicted_gain*mask
+    predicted_gain = predicted_gain*mask*im
 
     # smooth to help with peak detection
     predicted_gain = cv2.GaussianBlur(predicted_gain,(5,5),0)
