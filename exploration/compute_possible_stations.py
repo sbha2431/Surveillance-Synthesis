@@ -118,6 +118,13 @@ def compute_visibility(phi, psi, x0, dx):
     return psi, psi_current
 
 
+def createCircle(center, radius, x, y):
+    dx = x[0,1] - x[0,0]
+    mask = (x-center[1])**2 + (y-center[0])**2 <= (radius*dx)**2
+    mask = 1*mask # convert to number
+    return mask
+
+
 def compute_visibility_for_sequence(phi, psi, x0, dx):
     # assumes x0 is [n,2] matrix, each row is an observing location
     n = x0.shape[0]
@@ -316,7 +323,7 @@ def x2s(x, h, w, dx):
 
 
 
-def get_stations(obj, h, w, predict_func, s, min_distance = 1):
+def get_stations(obj, h, w, predict_func, s, radius = 10, min_distance = 1):
 # demonstration of how to setup the scene and observing locations
 # to use the visibility algorithm to find the path
 # psi is the phi
@@ -333,6 +340,7 @@ def get_stations(obj, h, w, predict_func, s, min_distance = 1):
     # setup the grid
     m = INPUT_SIZE
     dx = 1.0/INPUT_SIZE
+    scale = INPUT_SIZE * 1.0/h
     machine_eps = 1e-12
     eps = 2*dx
     grid_space = np.linspace(0,m-1,m)*dx 
@@ -353,10 +361,15 @@ def get_stations(obj, h, w, predict_func, s, min_distance = 1):
     vis = 1*(psi>0)
     hor = delta(psi,2*dx)*dx*(delta(phi,2*dx)==0)
     _, _, predicted_gain = predict(vis, hor, predict_func)
+    
+    # mask limited range
+    mask = createCircle(x0[-1,:], radius*scale, x,y)
+    predicted_gain = predicted_gain*mask
 
     # smooth to help with peak detection
-    scale = INPUT_SIZE * 1.0/h
     predicted_gain = cv2.GaussianBlur(predicted_gain,(5,5),0)
+
+
     coordinates = peak_local_max(predicted_gain, min_distance= int(min_distance*scale))  # returns row, col
 
     # debug
@@ -398,15 +411,16 @@ if __name__ == '__main__':
     obj = img2obj(image)   # list containing row major indices of objects
 
     # specify position is recent memory
-    s = [340]  # needs to be a list
+    radius = 10
+    s = [340, 110]  # needs to be a list
     min_distance = 2  # minimum distance between each station (smaller means more locations are returned)
-    stations = get_stations(obj, h, w, predict_func, s, min_distance)
+    stations = get_stations(obj, h, w, predict_func, s, radius, min_distance)
 
 
     # plot the results
     x = s2x(s, h, w, 1)
     x_stations = s2x(stations, h, w, 1)
-    print(x_stations)
+    print(stations)
 
     plt.imshow(image)
     plt.plot(x_stations[:,1], x_stations[:,0],'x')
