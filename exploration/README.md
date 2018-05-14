@@ -13,7 +13,7 @@ https://www.tensorflow.org/install/install_linux#the_url_of_the_tensorflow_pytho
 conda create -n exp python=2.7
 source activate exp
 pip install opencv-python matplotlib
-pip install scikit-fmm scipy 
+pip install scikit-fmm scipy scikit-image
 pip install $TF_BINARY_URL
 pip install tensorpack
 ```
@@ -24,6 +24,10 @@ pip install tensorpack
 ```
 python compute_stations.py data/chicago4_45_2454_5673.png 
 python compute_stations.py data/chicago4_45_2454_5673.png --size 64
+
+python compute_all_vis.py figures/chicago4_45_2454_5673_map.png 
+python compute_possible_stations.py figures/chicago4_45_2454_5673_map.png 
+
 ```
 
 

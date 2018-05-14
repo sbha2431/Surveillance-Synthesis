@@ -90,8 +90,8 @@ def obj2img(obj, h, w):
     numObj = len(obj)
     
     for ind in obj:
-        i = ind % w
-        j = ind // w
+        i = ind // w
+        j = ind % w
         image[i,j] = 0
 
     return image
