@@ -256,6 +256,14 @@ def run_sequence(im, predict_func, x0, output_path = None):
 
 
 
+def add_border(im, pad=2):
+    im[:pad,:] = 0
+    im[:,:pad] = 0
+    im[-pad:,:] = 0
+    im[:,-pad:] = 0
+
+    return im
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('image_path')
@@ -284,6 +292,8 @@ if __name__ == '__main__':
 
     phi =  distance(im2double(small_im)-.5, 1.0/args.size)
     show(phi, x0, 1.0/args.size, phi, 0*phi, 0*phi, phi, prefix +'_path.png') 
+
+    small_im = add_border(small_im)
     cv2.imwrite(prefix + '_map.png', small_im)
 
     # vantage points are in range [0,1] so we scale back to pixels [0,args.size]
