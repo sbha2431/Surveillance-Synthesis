@@ -348,7 +348,8 @@ def get_stations(obj, h, w, predict_func, s, radius = 10, min_distance = 1):
 
      
     # compute the signed distance function for the map 
-    phi = distance((2*im-1)*dx, dx)
+    phi = im2double(im)>.5
+    phi = distance((2*phi-1)*dx, dx)
  
     residual = np.zeros(0)
     psi = -1e12
@@ -411,9 +412,10 @@ if __name__ == '__main__':
     obj = img2obj(image)   # list containing row major indices of objects
 
     # specify position is recent memory
-    radius = 10
-    s = [340, 110]  # needs to be a list
-    min_distance = 2  # minimum distance between each station (smaller means more locations are returned)
+    radius = 6
+    #s = [340/2, 110/2]  # needs to be a list
+    s = [52]
+    min_distance = 1  # minimum distance between each station (smaller means more locations are returned)
     stations = get_stations(obj, h, w, predict_func, s, radius, min_distance)
 
 
