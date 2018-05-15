@@ -39,12 +39,15 @@ def preprocess(image_path, size):
     im = cv2.resize(im,(size, size))
     # hacky, model works on a fixed size
     im = (255 * (im>128) ).astype(np.uint8)
+
+    small_im = 1*im
+
     im = cv2.resize(im,(INPUT_SIZE, INPUT_SIZE),cv2.INTER_NEAREST)
     im = (255 * (im>128) ).astype(np.uint8)
     im = imfill(im)
     im = im2double(im)
 
-    return im
+    return im, small_im
 
 
 def delta(x, epsilon):
@@ -66,7 +69,7 @@ def vis2d(phi, O):
     for i in range(O[0],Ny):
         for j in range(O[1],-1,-1):
             r1 = i - O[0]
-            r2 = j - O[1]
+            r2 = j - O[1]        
             if (r1 != 0) or (r2 != 0):
                 A = 1.0/(r1-r2)
                 psi[i,j] = A*(r1*psi[i-1,j]-r2*psi[i,j+1])
@@ -76,7 +79,7 @@ def vis2d(phi, O):
     for i in range(O[0],-1,-1):
         for j in range(O[1],-1,-1):
             r1 = i - O[0]
-            r2 = j - O[1]
+            r2 = j - O[1]        
             if (r1 != 0) or (r2 != 0):
                 A = 1.0/(-r1-r2)
                 psi[i,j] = A*(-r1*psi[i+1,j]-r2*psi[i,j+1])
@@ -86,7 +89,7 @@ def vis2d(phi, O):
     for i in range(O[0],-1,-1):
         for j in range(O[1],Nx):
             r1 = i - O[0]
-            r2 = j - O[1]
+            r2 = j - O[1]        
             if (r1 != 0) or (r2 != 0):
                 A = 1.0/(-r1+r2)
                 psi[i,j] = A*(-r1*psi[i+1,j]+r2*psi[i,j-1])
@@ -96,7 +99,7 @@ def vis2d(phi, O):
     for i in range(O[0],Ny):
         for j in range(O[1],Nx):
             r1 = i - O[0]
-            r2 = j - O[1]
+            r2 = j - O[1]        
             if (r1 != 0) or (r2 != 0):
                 A = 1.0/(r1+r2)
                 psi[i,j] = A*(r1*psi[i-1,j]+r2*psi[i,j-1])
@@ -117,7 +120,7 @@ def plot_path(psi, x0):
     [m,n] = psi.shape
     x0[:,0] = 1+m-x0[:,0] - 0.5 # flipud for plotting purposes plt.contour(flipud(psi),0)
     x0[:,1] = x0[:,1] - 0.5
-    plt.contour(np.flipud(psi),0)
+    plt.contour(np.flipud(psi),0) 
     plt.plot(x0[:,1], x0[:,0],'ko',mfc='none')
     #plt.plot(x0[0,1],x0[0,0],'r*')
     plt.plot(x0[-1,1],x0[-1,0],'r.')
@@ -140,7 +143,7 @@ def moveOn(nextStep, x0, gain, tol):
     if (gain>.6).sum() == 0:
         print('No more gains')
         return True
-
+    
     dist = np.sqrt( ((x0-nextStep)**2).sum(axis=1) )
     if np.any(dist < tol):
         return True
@@ -156,7 +159,7 @@ def show(psi, x0, dx, phi, hor, gain, psi_current, name):
     #plt.imshow(psi>0,vmin=-1,vmax=1)
     #plt.imshow(psi_current>0,vmin=-1,vmax=1)
 
-    temp = psi*1
+    temp = psi*1.0
     temp[phi>2*dx] = None
     plt.contour(temp,0,colors='k')
     plt.plot(x0[:,1], x0[:,0],'b.', mfc='none')
@@ -166,12 +169,12 @@ def show(psi, x0, dx, phi, hor, gain, psi_current, name):
     plt.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
 
     plt.savefig(name,bbox_inches='tight', pad_inches=0, dpi=600)
-    plt.close()
+    plt.close() 
 
 
 def get_random_x0(im):
     # given image of free space, pick one
-    m = im.shape[0]
+    m = im.shape[0] 
     dx = 1.0/m
     pad = 3
     temp = 1*im;
@@ -179,7 +182,7 @@ def get_random_x0(im):
     temp[:,:pad] = 0
     temp[-pad:,:] = 0
     temp[:,-pad:] = 0
-    idx = np.where(temp>0)
+    idx = np.where(temp>0) 
     numPositions = (temp>0).sum()
 
     j = np.random.randint(numPositions)
@@ -196,15 +199,15 @@ def run_sequence(im, predict_func, x0, output_path = None):
     # setup the grid
     h,w = im.shape
     m = h
-    dx = 1.0/m
+    dx = 1.0/m 
     machine_eps = 1e-12
     eps = 2*dx
-    grid_space = np.linspace(0,m-1,m)*dx
+    grid_space = np.linspace(0,m-1,m)*dx 
     [x,y] = np.meshgrid(grid_space, grid_space)
-
-    # compute the signed distance function for the map
+  
+    # compute the signed distance function for the map 
     phi = distance((2*im-1)*dx, dx)
-
+ 
     residual = np.zeros(0)
     psi = -1e12
     stepNum = 0
@@ -223,9 +226,9 @@ def run_sequence(im, predict_func, x0, output_path = None):
         _, _, predicted_gain = predict(vis, hor, predict_func)
 
         # process the output
-        tooClose = True
-        while tooClose:
-            new_y, new_x = np.unravel_index(predicted_gain.argmax(),predicted_gain.shape)
+        tooClose = True            
+        while tooClose: 
+            new_y, new_x = np.unravel_index(predicted_gain.argmax(),predicted_gain.shape) 
             nextStep = np.array([new_y,new_x])*dx
             dist = np.sqrt( ((x0-nextStep)**2).sum(axis=1) )
             if np.any(dist < 20*dx):
@@ -234,7 +237,7 @@ def run_sequence(im, predict_func, x0, output_path = None):
             else:
                 tooClose = False
 
-        if moveOn(np.array([new_y,new_x])*dx, x0, predicted_gain, 20*dx):
+        if moveOn(np.array([new_y,new_x])*dx, x0, predicted_gain, 20*dx): 
             print('WE ARE DONE')
             break
 
@@ -244,23 +247,32 @@ def run_sequence(im, predict_func, x0, output_path = None):
         x0 = np.append(x0,np.array([[new_y,new_x]])*dx,axis=0)
         residual = np.append(residual, (1*(phi>0)-1*(psi>0)).sum())
         stepNum += 1
-
-    if output_path is not None:
+   
+    if output_path is not None: 
         show(psi, x0, dx, phi, hor, predicted_gain,psi, output_path+'_%.2d.png' % stepNum)
-
+      
     residual = residual * 1.0/ (phi>0).sum()
     return x0, residual
 
 
 
+def add_border(im, pad=2):
+    im[:pad,:] = 0
+    im[:,:pad] = 0
+    im[-pad:,:] = 0
+    im[:,-pad:] = 0
+
+    return im
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('image_path',default= 'data/chicago4_45_2454_5673.png')
+    parser.add_argument('image_path')
     parser.add_argument('--model_path',default= 'log/checkpoint')
     parser.add_argument('--output_path', default='figures/')
-    parser.add_argument('--size', default=32)
+    parser.add_argument('--size', type=int, default=32)
     args = parser.parse_args()
 
+    np.random.seed(0) 
     # initialize the model
     predict_func = OfflinePredictor(
             PredictConfig(
@@ -269,18 +281,23 @@ if __name__ == '__main__':
                 session_init=SaverRestore(args.model_path),
                 input_names=['input_image'],
                 output_names=['prob']))
-
+   
     # load the underlying map and resize to desired
-    im = preprocess(args.image_path, args.size)
+    im, small_im = preprocess(args.image_path, args.size)
 
-    # create frames for animation
-    prefix = os.path.basename(args.image_path)[:-4]
+    # create frames for animation 
+    prefix = os.path.join(args.output_path, os.path.basename(args.image_path)[:-4])
     x0 = get_random_x0(im)
-    x0, residual = run_sequence(im, predict_func, x0, output_path = os.path.join(args.output_path, prefix) )
+    x0, residual = run_sequence(im, predict_func, x0)
+
+    phi =  distance(im2double(small_im)-.5, 1.0/args.size)
+    show(phi, x0, 1.0/args.size, phi, 0*phi, 0*phi, phi, prefix +'_path.png') 
+
+    small_im = add_border(small_im)
+    cv2.imwrite(prefix + '_map.png', small_im)
 
     # vantage points are in range [0,1] so we scale back to pixels [0,args.size]
     x0 = x0 * args.size
-
     print('The patrol stations are at:')
     print(x0)    
 
