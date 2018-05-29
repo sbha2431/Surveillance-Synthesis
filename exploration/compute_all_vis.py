@@ -125,7 +125,7 @@ def compute_visibility_for_all(obj, h, w, radius = np.inf):
             psi = 1*(psi>0) * mask
             I,J = np.where(psi==0)  # subscripts of obstacles
             occluded = (I*w + J).tolist()
-            notVis[i*w + j] = occluded
+            notVis[i*w + j] = set(occluded)
     return notVis
 
 
