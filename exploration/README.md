@@ -17,6 +17,12 @@ pip install scikit-fmm scipy scikit-image
 pip install $TF_BINARY_URL
 pip install tensorpack
 ```
+For strategy synthesis, slugs needs to be installed. Instructions can be found at 
+https://github.com/VerifiableRobotics/slugs
+
+Enter the path to slugs executable in the Main.py file.
+
+For visualization, Pygame needs to be installed.
 
 
 # example
