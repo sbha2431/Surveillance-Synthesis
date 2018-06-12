@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 from skfmm import distance
 import scipy.ndimage
 
+from vis2d import vis2d
+
 # for cnn
 import argparse
 import tensorflow as tf
@@ -56,56 +58,6 @@ def delta(x, epsilon):
     return y
 
 
-def vis2d(phi, O):
-# phi is the sdf of the scene
-# O is the grid index of the vantage point
-
-    Ny, Nx = phi.shape[:2]
-    psi = 1e12 * np.ones((Ny, Nx))
-    psi[O[0], O[1]] = phi[O[0], O[1]]
-
-    # TODO: indexing is weird
-    # NE sweep
-    for i in range(O[0],Ny):
-        for j in range(O[1],-1,-1):
-            r1 = i - O[0]
-            r2 = j - O[1]        
-            if (r1 != 0) or (r2 != 0):
-                A = 1.0/(r1-r2)
-                psi[i,j] = A*(r1*psi[i-1,j]-r2*psi[i,j+1])
-                psi[i,j] = min(phi[i,j],psi[i,j])
-
-    # NW sweep
-    for i in range(O[0],-1,-1):
-        for j in range(O[1],-1,-1):
-            r1 = i - O[0]
-            r2 = j - O[1]        
-            if (r1 != 0) or (r2 != 0):
-                A = 1.0/(-r1-r2)
-                psi[i,j] = A*(-r1*psi[i+1,j]-r2*psi[i,j+1])
-                psi[i,j] = min(phi[i,j],psi[i,j])
-
-    # SW sweep
-    for i in range(O[0],-1,-1):
-        for j in range(O[1],Nx):
-            r1 = i - O[0]
-            r2 = j - O[1]        
-            if (r1 != 0) or (r2 != 0):
-                A = 1.0/(-r1+r2)
-                psi[i,j] = A*(-r1*psi[i+1,j]+r2*psi[i,j-1])
-                psi[i,j] = min(phi[i,j],psi[i,j])
-
-    # SE sweep
-    for i in range(O[0],Ny):
-        for j in range(O[1],Nx):
-            r1 = i - O[0]
-            r2 = j - O[1]        
-            if (r1 != 0) or (r2 != 0):
-                A = 1.0/(r1+r2)
-                psi[i,j] = A*(r1*psi[i-1,j]+r2*psi[i,j-1])
-                psi[i,j] = min(phi[i,j],psi[i,j])
-
-    return psi
 
 
 def compute_visibility(phi, psi, x0, dx):
@@ -294,7 +246,6 @@ if __name__ == '__main__':
     phi =  distance(im2double(small_im)-.5, 1.0/args.size)
     show(phi, x0, 1.0/args.size, phi, 0*phi, 0*phi, phi, prefix +'_path.png') 
 
-    small_im = add_border(small_im)
     cv2.imwrite(prefix + '_map.png', small_im)
 
     # vantage points are in range [0,1] so we scale back to pixels [0,args.size]

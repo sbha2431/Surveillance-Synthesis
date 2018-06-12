@@ -8,57 +8,7 @@ import matplotlib.pyplot as plt
 from skfmm import distance
 import argparse
 
-
-def vis2d(phi, O):
-# phi is the sdf of the scene
-# O is the grid index of the vantage point
-
-    Ny, Nx = phi.shape[:2]
-    psi = 1e12 * np.ones((Ny, Nx))
-    psi[O[0], O[1]] = phi[O[0], O[1]]
-
-    # TODO: indexing is weird
-    # NE sweep
-    for i in range(O[0],Ny):
-        for j in range(O[1],-1,-1):
-            r1 = i - O[0]
-            r2 = j - O[1]        
-            if (r1 != 0) or (r2 != 0):
-                A = 1.0/(r1-r2)
-                psi[i,j] = A*(r1*psi[i-1,j]-r2*psi[i,j+1])
-                psi[i,j] = min(phi[i,j],psi[i,j])
-
-    # NW sweep
-    for i in range(O[0],-1,-1):
-        for j in range(O[1],-1,-1):
-            r1 = i - O[0]
-            r2 = j - O[1]        
-            if (r1 != 0) or (r2 != 0):
-                A = 1.0/(-r1-r2)
-                psi[i,j] = A*(-r1*psi[i+1,j]-r2*psi[i,j+1])
-                psi[i,j] = min(phi[i,j],psi[i,j])
-
-    # SW sweep
-    for i in range(O[0],-1,-1):
-        for j in range(O[1],Nx):
-            r1 = i - O[0]
-            r2 = j - O[1]        
-            if (r1 != 0) or (r2 != 0):
-                A = 1.0/(-r1+r2)
-                psi[i,j] = A*(-r1*psi[i+1,j]+r2*psi[i,j-1])
-                psi[i,j] = min(phi[i,j],psi[i,j])
-
-    # SE sweep
-    for i in range(O[0],Ny):
-        for j in range(O[1],Nx):
-            r1 = i - O[0]
-            r2 = j - O[1]        
-            if (r1 != 0) or (r2 != 0):
-                A = 1.0/(r1+r2)
-                psi[i,j] = A*(r1*psi[i-1,j]+r2*psi[i,j-1])
-                psi[i,j] = min(phi[i,j],psi[i,j])
-
-    return psi
+from vis2d import vis2d
 
 
 def compute_visibility(phi, psi, x0, dx):
@@ -116,8 +66,8 @@ def compute_visibility_for_all(obj, h, w, radius = np.inf):
     y = np.linspace(0,h-1,h)
     x,y = np.meshgrid(x,y)
 
-    for i in range(2,h-2):  # for now we have to skip borders until i have time to modify the edge cases for vis2d
-        for j in range(2,w-2): 
+    for i in range(0,h):  # for now we have to skip borders until i have time to modify the edge cases for vis2d
+        for j in range(0,w): 
             if phi[i,j] == 0:
                 continue  # ignore positions inside obstacles
             mask = createCircle([i,j], radius, x, y)
@@ -144,4 +94,3 @@ if __name__ == '__main__':
    
     # compute visibility for each state
     notVis = compute_visibility_for_all(obj, h, w, radius = 10)
-
