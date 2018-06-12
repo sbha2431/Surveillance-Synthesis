@@ -226,6 +226,7 @@ def run_sequence(im, predict_func, x0, output_path = None):
         _, _, predicted_gain = predict(vis, hor, predict_func)
 
         # process the output
+        predicted_gain = predicted_gain*im # mask out obstacles
         tooClose = True            
         while tooClose: 
             new_y, new_x = np.unravel_index(predicted_gain.argmax(),predicted_gain.shape) 

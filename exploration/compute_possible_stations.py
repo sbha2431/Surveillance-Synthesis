@@ -323,19 +323,19 @@ def x2s(x, h, w, dx):
 
 
 
-def get_stations(obj, h, w, predict_func, s, radius = 10, min_distance = 1):
+def get_stations(obj, h, w, predict_func, s, radius = 10, min_distance = 1, usePeaks=False):
 # demonstration of how to setup the scene and observing locations
 # to use the visibility algorithm to find the path
 # psi is the phi
 # psi is visibility
 
     # convert obj to image
-    im = obj2img(obj, h, w)
+    orig_im = obj2img(obj, h, w)
 
     # convert state to x,y 
     x0 = s2x(s, h, w, 1.0/h) 
 
-    im = cv2.resize(im, (INPUT_SIZE,INPUT_SIZE), cv2.INTER_NEAREST)  # resize to match model requirements
+    im = cv2.resize(orig_im, (INPUT_SIZE,INPUT_SIZE), cv2.INTER_NEAREST)  # resize to match model requirements
 
     # setup the grid
     m = INPUT_SIZE
@@ -370,8 +370,14 @@ def get_stations(obj, h, w, predict_func, s, radius = 10, min_distance = 1):
     # smooth to help with peak detection
     predicted_gain = cv2.GaussianBlur(predicted_gain,(5,5),0)
 
+    threshold = 0.4 * 255  # only keep positions above this threshold
+    
+    if usePeaks:
+        coordinates = peak_local_max(predicted_gain, min_distance= int(min_distance*scale))  # returns row, col
+    else:
+        coordinates = np.where(predicted_gain> threshold)
+        coordinates = np.array([coordinates[0], coordinates[1]]).T
 
-    coordinates = peak_local_max(predicted_gain, min_distance= int(min_distance*scale))  # returns row, col
 
     # debug
     #plt.imshow(phi>0);plt.show()
@@ -381,7 +387,15 @@ def get_stations(obj, h, w, predict_func, s, radius = 10, min_distance = 1):
     # give pixel location in original image size
 
     coordinates = (coordinates/scale).astype(int)
-    stations = coordinates[:,0] * w + coordinates[:,1]
+
+    stations = []
+    # remove stations if they are already visited or land on obstacle
+    for i in range(coordinates.shape[0]):
+        isNotObstacle = orig_im[coordinates[i,0], coordinates[i,1]] != 0
+        newStation = coordinates[i,0] * w + coordinates[i,1]
+        isNotVisited = newStation not in s
+        if isNotObstacle and isNotVisited:
+            stations.append(newStation)
 
     return stations
 
@@ -414,9 +428,11 @@ if __name__ == '__main__':
     # specify position is recent memory
     radius = 6
     #s = [340/2, 110/2]  # needs to be a list
-    s = [52]
+    s = [131,147, 162]
     min_distance = 1  # minimum distance between each station (smaller means more locations are returned)
-    stations = get_stations(obj, h, w, predict_func, s, radius, min_distance)
+
+    usePeaks = True
+    stations = get_stations(obj, h, w, predict_func, s, radius, min_distance, usePeaks)
 
 
     # plot the results
