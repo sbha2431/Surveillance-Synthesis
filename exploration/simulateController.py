@@ -72,7 +72,7 @@ def getGridstate(gwg,currstate,dirn):
     elif dirn == 'N':
         return currstate - gwg.ncols
 
-def userControlled_partition_dist(filename,gwg,partitionGrid,moveobstacles,allowed_states,invisibilityset):
+def userControlled_partition_dist(filename,gwg,partitionGrid,moveobstacles,allowed_states,invisibilityset,stations):
     automaton = [None]*gwg.nagents
     automaton_state = [None]*gwg.nagents
     agentstate = [None]*gwg.nagents
@@ -113,6 +113,9 @@ def userControlled_partition_dist(filename,gwg,partitionGrid,moveobstacles,allow
 
         gwg.render()
         # gwg.draw_state_labels()
+
+        if agentstate[0] in stations:
+            return agentstate[0],[gridstate]
 
         nextstatedirn = [dict()]*gwg.nagents
         nexttargetstate = [None]*gwg.nagents

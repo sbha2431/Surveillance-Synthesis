@@ -47,7 +47,7 @@ def write_to_slugs_part_dist(infile,gw,init,initmovetarget,invisibilityset,targe
 
     file.write('[OUTPUT]\n')
     file.write('s:0...{}\n'.format(len(gw.states)-1))
-
+    file.write('c:0...1\n')
     # for v in range(vel):
     #     file.write('u{}:0...{}\n'.format(v,gw.nactions-1))
 
@@ -60,7 +60,7 @@ def write_to_slugs_part_dist(infile,gw,init,initmovetarget,invisibilityset,targe
 
     file.write('[SYS_INIT]\n')
     file.write('s = {}\n'.format(init))
-
+    file.write('c = 0\n')
 
     # writing env_trans
     file.write('\n[ENV_TRANS]\n')
@@ -154,9 +154,9 @@ def write_to_slugs_part_dist(infile,gw,init,initmovetarget,invisibilityset,targe
         if obs in allowed_states:
             file.write('!st = {}\n'.format(obs))
 
-    if target_reachability:
-        for t in targets:
-            file.write('!st = {}\n'.format(t))
+    # if target_reachability:
+    #     for t in targets:
+    #         file.write('!st = {}\n'.format(t))
 
     # writing sys_trans
     file.write('\n[SYS_TRANS]\n')
@@ -216,17 +216,26 @@ def write_to_slugs_part_dist(infile,gw,init,initmovetarget,invisibilityset,targe
                 if counter > 0:
                     file.write(stri)
 
+    stri = 'c = 0 /\\ ('
+    for t in targets:
+        stri += ('s = {} \\/ '.format(nonbeliefstates.index(t)))
+    stri = stri[:-3]
+    stri += ') -> c\' = 1'
+    stri += '\n'
+    stri += 'c = 0 /\\ !('
+    for t in targets:
+        stri += ('s = {} \\/ '.format(nonbeliefstates.index(t)))
+    stri = stri[:-3]
+    stri += ') -> c\' = 0\n'
+    stri += 'c = 1 -> c\' = 1 \n'
+    file.write(stri)
 
 
     # Writing sys_liveness
     file.write('\n[SYS_LIVENESS]\n')
     if target_reachability:
-        stri=''
-        for t in targets:
-            stri+=('s = {} \\/ '.format(nonbeliefstates.index(t)))
-        stri = stri[:-3]
-        stri += '\n'
-        file.write(stri)
+        file.write('c = 1\n')
+
 
     stri  = ''
     if belief_liveness >0:
