@@ -31,6 +31,8 @@ def x2s(x, h, w, dx):
     return s
 
 
+
+
 def im2double(im):
     min_val = np.min(1*im.ravel())
     max_val = np.max(1*im.ravel())
@@ -162,6 +164,24 @@ class env:
         return temp 
 
 
+    def compute_action_set(self, s, v):
+    # gets list of actions from a state s given velocity v
+
+        m = self.m
+        x = s2x([s], m, m, 1)
+        i = int(x[-1,0])
+        j = int(x[-1,1])
+        wP = np.ones((m,m)) 
+        wP[i,j] = 0
+        wP = travel_time(wP, v * self.speed, dx = 1)
+       
+        mask =  (wP.data<=1)*1*(self.phi>0) 
+        # this is if we want to convert to states
+        #X,Y = np.where(mask)
+        #actions = Y * m + X
+
+        return mask
+
     def compute_reach_gain_path(self, sP, sE):
         #[iP, jP, iE, jE] = self.position_to_sub(xP,xE)
       
@@ -248,54 +268,39 @@ class env:
         [self.pathE, self.lastPathLengthE] = self.update_path(self.pathE, xE, self.uE, self.vE)
 
         #self.plot_reach_gain_path(xP, xE, psi, E, 'plot.png')
-
-        # transform path to discrete version
-        sPath = x2s(self.pathP, m, m, dx)
-        sPath = sPath[np.sort(np.unique(sPath,return_index=True)[1])]
-        # hacky way to incorporate speed, keep every self.vP positions
-        sPath = sPath[self.vP::self.vP]
-        return sPath
+        
+        return self.discretize_path(self.pathP)
+        
 
     def update_path(self, X0, Xf, u, v):
+        # u is the travel time from initial position
+        # v is velocity
+        # naively let's compute the path backwards by picking the closest point within the radius given by mask
         m = self.m
-        ds = self.dx  # length of gradient step
-        dx = self.dx  # length of gradient step
-        tol = 2*ds
-
-        xv = np.array([Xf[-1,1]])
-        yv = np.array([Xf[-1,0]])
+        dx = self.dx
         u = u.data + 1000*u.mask
-        while np.sqrt( (xv[-1] - X0[-1,1])**2 +   (yv[-1] - X0[-1,0]) **2 ) > tol:
-            xi = min(int(round(xv[-1]/dx)), m-1)
-            yi = min(int(round(yv[-1]/dx)), m-1)
-            xip = min(xi + 1, m-1)
-            xim = max(xi - 1, 0)
-            yip = min(yi + 1, m-1)
-            yim = max(yi - 1, 0)
+        path = np.array([Xf[-1]])
 
-             
-            # compute gradient
-            u0 =  u[yi , xi]  
-            uxp = u[yi , xip]
-            uxm = u[yi , xim]
-            uyp = u[yip, xi] 
-            uym = u[yim, xi] 
+        while np.abs(path[-1] - X0[-1]).sum() > dx:
+            s = x2s(np.array([path[-1]]), m, m, dx)
+            mask = self.compute_action_set(s,v)
+            temp = u + 1000*(1-mask)
+            [i,j] = getRandomPositions( temp == temp.min() )
+            i = i[0]; j = j[0]
+            path = np.concatenate((path, np.array([[self.y[i,j], self.x[i,j]]])), axis=0)
+        path = path[::-1]  #reverse
 
-
-            gradx =  uxp - u0 if uxp < uxm else u0 - uxm
-            grady = uyp - u0 if uyp < uym else u0 - uym
-            
-            grad_norm = np.sqrt(gradx**2 + grady**2) + 1e-12
-            if grad_norm == 0:
-                print('ERROR: Initial point is not reachable.')
-                break
-    
-            # STEP 2: advance point in space (x,y)
-            xv = np.append(xv, xv[-1] - v*gradx / grad_norm * ds)
-            yv = np.append(yv, yv[-1] - v*grady / grad_norm * ds)
-  
-        return [np.append(X0, np.array([yv[::-1],xv[::-1]]).T,axis=0), xv.shape[0]]
+        return path, path.shape[0]
                 
+    def discretize_path(self, path):
+    # transform path to discrete version
+        m = self.m
+        dx = 1.0/m
+        sPath = x2s(path, m, m, dx)
+        sPath = sPath[np.sort(np.unique(sPath,return_index=True)[1])]
+        # hacky way to incorporate speed, keep every self.vP positions
+        #sPath = sPath[self.vP::self.vP]
+        return sPath
 
     def plot_reach_gain_path(self, xP, xE, psi, E, name):
         dx = self.dx
@@ -352,8 +357,8 @@ class env:
         fig.savefig(name, dpi=300, bbox_inches='tight')
         plt.close()
 
-        plt.imshow(self.totalVis)
-        plt.savefig('total_vis.png', dpi=300, bbox_inches='tight')
+        #plt.imshow(self.totalVis)
+        #plt.savefig('total_vis.png', dpi=300, bbox_inches='tight')
 
         #plt.show()
         #plt.pause(2); plt.clf()
@@ -430,5 +435,5 @@ if __name__ == '__main__':
     sE = 150
     e = env('circle_map_32.png', vP = 3) #vP is pursuer speed
     path = e.compute_reach_gain_path(sP, sE)
-    keyboard()
+    print(path)
 
