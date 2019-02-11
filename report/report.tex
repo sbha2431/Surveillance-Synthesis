@@ -1,66 +1,53 @@
-\documentclass[11pt,english]{article}
+\documentclass[letterpaper, 10 pt, conference]{ieeeconf}  % Comment this line out if you need a4paper
 \input{macros.tex}
-\usepackage[T1]{fontenc} \usepackage[latin9]{inputenc} \usepackage{verbatim} \usepackage{float} \usepackage{amsmath} \usepackage{amssymb} \usepackage{graphicx} \makeatletter %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.  %% Because html converters don't know
+%\documentclass[a4paper, 10pt, conference]{ieeeconf}      % Use this line for a4 paper
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
-\usepackage{amssymb, amsthm, geometry, graphicx, caption, enumerate, mathrsfs}
-\newgeometry{margin=1in}
-\usepackage{fancyhdr}
+\IEEEoverridecommandlockouts                              % This command is only needed if 
+                                                          % you want to use the \thanks command
 
-\makeatletter
-\renewcommand*\env@matrix[1][*\c@MaxMatrixCols c]{%
-\hskip -\arraycolsep
-\let\@ifnextchar\new@ifnextchar
-\array{#1}}
-\makeatother
-\pagestyle{fancy}
+\overrideIEEEmargins                                      % Needed to meet printer requirements.
 
-\setlength\parindent{0pt}  % no indents
+%\renewcommand{\baselinestretch}{2}
 
-% Reset section number in each part.
-\usepackage{chngcntr}
-\counterwithin*{section}{part}
+% See the \addtolength command later in the file to balance the column lengths
+% on the last page of the document
+\pdfminorversion=4
 
-\renewcommand{\theenumi}{\alph{enumi}} \renewcommand{\theenumii}{\arabic{enumii}} \renewcommand{\labelenumii}{\theenumii}
+\title{\LARGE \bf Synthesis of Surveillance Strategies via Belief Abstraction}
 
-\makeatother
-
-\usepackage{babel}
-
-
-\title{Surveillance Exploration}
-\author{}
-\date{\today}
-
-\lhead{}
-\chead{}
-\rhead{}
-\lfoot{}
-\cfoot{\thepage}
-\rfoot{}
-\renewcommand{\headrulewidth}{0pt}
-\renewcommand{\footrulewidth}{0pt}
-
-\newcommand{\beq}{\begin{equation*} \begin{aligned}}
-\newcommand{\eeq}{\end{aligned} \end{equation*}}
+\author{Author Name$^{1}$ and Author Name$^{2}$ and Author Name$^{1}$ and Author Name$^{2}$ % stops a space
+%\thanks{*This work was not supported by any organization}% <-this % stops a space
+\thanks{$^{1}$}%
+\thanks{$^{2}$}%
+}
 
 
 \begin{document}
 \maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
 
-\newcommand{\proj}{\mathcal{P}}
-\newcommand{\backproj}{\mathcal{Q}}
+\begin{abstract}
 
+We consider the problem of maximizing visibility coverage of an environment while satisfying a surveillance requirement, that is, maintain knowledge on the location of a potentially adversarial moving target.
 
+\end{abstract}
 
-We consider the problem of patrolling a known environment while maintaining surveillance
-of a target.
+\section{Introduction}
 
+\section{Preliminaries}
 
 
 
 \input{Surveillance.tex}
 
 \input{Patrol}
+
+\section{Experimental evaluation}
+
+\section{Conclusion}
+
+\bibliographystyle{IEEEtran}
+\bibliography{main}
 
 \end{document}
