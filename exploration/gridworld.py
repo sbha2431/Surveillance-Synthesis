@@ -5,6 +5,7 @@ import random
 import numpy as np
 import pygame
 from skimage import io
+import cv2
 import pygame.locals as pgl
 
 class Gridworld():
@@ -12,12 +13,20 @@ class Gridworld():
     def __init__(self, filename=None, initial=0, nrows=8, ncols=8, nagents=1, targets=[], obstacles=[], moveobstacles = [], regions=dict()):
         # walls are the obstacles. The edges of the gridworld will be included into the walls.
         # region is a string and can be one of: ['pavement','gravel', 'grass', 'sand']
-        if filename != None:
-            data = io.imread(filename)
+        if filename[0] != None:
+            data = io.imread(filename[0])
+            data = cv2.resize(data, filename[1], interpolation=cv2.INTER_AREA)
             regionkeys = {'pavement', 'gravel', 'grass', 'sand', 'deterministic'}
             (nrows,ncols) = data.shape
             data = data.flatten()
             obstacles = list(np.where(data==0)[0])
+            # obstacles = list(np.where(data < 254)[0])
+            # obstacles.remove(387)
+            # obstacles.remove(356)
+            # obstacles.remove(325)
+            # obstacles.remove(598)
+            # obstacles.remove(597)
+            # obstacles.remove(596)
             regions = dict.fromkeys(regionkeys, {-1})
             regions['deterministic'] = range(nrows * ncols)
 
@@ -173,7 +182,7 @@ class Gridworld():
 
     ## Everything from here onwards is for creating the image
 
-    def render(self, size=30):
+    def render(self, size=20):
         self.height = self.nrows * size + self.nrows + 1
         self.width = self.ncols * size + self.ncols + 1
         self.size = size

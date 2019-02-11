@@ -433,7 +433,7 @@ if __name__ == '__main__':
     
     sP = 100
     sE = 150
-    e = env('circle_map_32.png', vP = 3) #vP is pursuer speed
+    e = env('figures/unnamed.png', vP = 3) #vP is pursuer speed
     path = e.compute_reach_gain_path(sP, sE)
     print(path)
 
