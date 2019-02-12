@@ -13,7 +13,7 @@
 % on the last page of the document
 \pdfminorversion=4
 
-\title{\LARGE \bf Synthesis of Surveillance Strategies via Belief Abstraction}
+\title{\LARGE \bf Cool title here}
 
 \author{Author Name$^{1}$ and Author Name$^{2}$ and Author Name$^{1}$ and Author Name$^{2}$ % stops a space
 %\thanks{*This work was not supported by any organization}% <-this % stops a space
@@ -29,19 +29,23 @@
 
 \begin{abstract}
 
-We consider the problem of maximizing visibility coverage of an environment while satisfying a surveillance requirement, that is, maintain knowledge on the location of a potentially adversarial moving target.
+We consider the problem of maximizing visibility coverage of an environment while satisfying a surveillance requirement, that is, maintain knowledge on the location of a potentially adversarial moving target. Using a level set representation of data and information, we train a convolutional neural network to determine vantage points that maximize visibility. While this method reduces online computation cost, it does not guarantee the surveillance requirement. We represent this requirement as a GR(1) temporal logic formula on a partial-information two player game and synthesize a permissive strategy. 
+
 
 \end{abstract}
 
-\section{Introduction}
 
-\section{Preliminaries}
+\input{Introduction.tex}
 
+
+\input{preliminaries.tex}
 
 
 \input{Surveillance.tex}
 
 \input{Patrol}
+
+\section{Surveillance game abstraction}
 
 \section{Experimental evaluation}
 
