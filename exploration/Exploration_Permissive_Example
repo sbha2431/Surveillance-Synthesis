@@ -167,11 +167,16 @@ if __name__ == '__main__':
     automaton = pickle.load(pickle_in)
     t = 1
     tstep = 0
+
+    e = compute_reach_path.env(mapfilename[0], vP=vel[0]-1)  # this should only be done once to initialize map
     while True:
 
-        e = compute_reach_path.env(mapfilename[0], vP=vel[0]-1)
         print('Computing path to new vantage point')
         path = e.compute_reach_gain_path(gwg.current[0], gwg.moveobstacles[0])[1:]
+
+        I,J = np.where(e.slidingVis == 0)  # subscripts of occluded regions (change to >0 for visible)
+        short_term_occ = (I*w + J).tolist() # list of occluded indices in short term visibility
+
         print(path)
         gwg ,tstep= Simulator.userControlled_imperfect_sensor_Permissive([automaton], gwg, pg, moveobstacles, allowed_states, invisibilityset,
                                                   sensor_uncertain_dict, sensor_uncertainty,path,(folder_locn,tstep))
