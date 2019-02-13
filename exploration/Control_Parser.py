@@ -107,3 +107,4 @@ def computeAutomatonState(automaton,currstate,state):
 
 if __name__ == '__main__':
     parsePermissiveStrategy('Examples/exploration_permissive4.strategy','Examples/exploration_permissive4.json')
+    # Put in the file location of the permissive strategy and the desired output file name here
