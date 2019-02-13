@@ -106,4 +106,4 @@ def computeAutomatonState(automaton,currstate,state):
     return allautstates
 
 if __name__ == '__main__':
-    parsePermissiveStrategy('Examples/exploration_permissive.strategy','Examples/exploration_permissive.json')
+    parsePermissiveStrategy('Examples/exploration_permissive4.strategy','Examples/exploration_permissive4.json')
