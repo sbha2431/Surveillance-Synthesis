@@ -169,18 +169,20 @@ if __name__ == '__main__':
     tstep = 0
 
     e = compute_reach_path.env(mapfilename[0], vP=vel[0]-1)  # this should only be done once to initialize map
+    num_free_states = (e.phi>0).sum()
+    vis_ratio = []  # a list keep track of ratio of visible to free space
     while True:
 
         print('Computing path to new vantage point')
         path = e.compute_reach_gain_path(gwg.current[0], gwg.moveobstacles[0])[1:]
 
-        I,J = np.where(e.slidingVis == 0)  # subscripts of occluded regions (change to >0 for visible)
-        short_term_occ = (I*w + J).tolist() # list of occluded indices in short term visibility
-
+        I,J = np.where(e.slidingVis > 0)  # subscripts of visible regions (change to ==0 for occluded)
+        short_term_vis = (I*w + J).tolist() # list of visible indices in short term visibility
+        vis_ratio.append( len(I)*1.0/num_free_states)
         print(path)
         gwg ,tstep= Simulator.userControlled_imperfect_sensor_Permissive([automaton], gwg, pg, moveobstacles, allowed_states, invisibilityset,
                                                   sensor_uncertain_dict, sensor_uncertainty,path,(folder_locn,tstep))
         gwfile = folder_locn + 'figs/gridworldfig_' + example_name + str(t) + '.png'
         gwg.save(gwfile)
         t += 1
-
+    print('This is the visibility ratio: ', vis_ratio)
