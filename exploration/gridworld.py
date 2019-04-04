@@ -15,11 +15,14 @@ class Gridworld():
         # region is a string and can be one of: ['pavement','gravel', 'grass', 'sand']
         if filename[0] != None:
             data = io.imread(filename[0])
-            data = cv2.resize(data, filename[1], interpolation=cv2.INTER_AREA)
+            data = cv2.resize(data, filename[1], interpolation=filename[2])
             regionkeys = {'pavement', 'gravel', 'grass', 'sand', 'deterministic'}
-            (nrows,ncols) = data.shape
+            (nrows,ncols) = data.shape[:2]
             data = data.flatten()
-            obstacles = list(np.where(data==0)[0])
+            obstacles = list(np.where(data<254)[0])
+            # obstacles.remove(1446)
+            # obstacles.remove(1449)
+            # obstacles.append(57)
             # obstacles = list(np.where(data < 254)[0])
             # obstacles.remove(387)
             # obstacles.remove(356)
@@ -27,6 +30,12 @@ class Gridworld():
             # obstacles.remove(598)
             # obstacles.remove(597)
             # obstacles.remove(596)
+            # obstacles.remove(583)
+            # obstacles.remove(584)
+            # obstacles.remove(335)
+            # obstacles.remove(336)
+            # obstacles.remove(368)
+
             regions = dict.fromkeys(regionkeys, {-1})
             regions['deterministic'] = range(nrows * ncols)
 
@@ -157,7 +166,7 @@ class Gridworld():
             successors.append((northwestState, p2))
 
         if action == 'E':
-            [p0, p1, p2] = self.probOfSuccess[(reg, 'W')]
+            [p0, p1, p2] = self.probOfSuccess[(reg, 'E')]
             successors.append((eastState, p0))
             successors.append((southeastState, p1))
             successors.append((northeastState, p2))

@@ -27,7 +27,7 @@ def img2obj(image):
     # assuming
     for i in range(h):
         for j in range(w):
-            if image[i,j] == 0:
+            if image[i,j] < 254:
                 obj.append(i*w + j)  # row major?
     return obj 
 

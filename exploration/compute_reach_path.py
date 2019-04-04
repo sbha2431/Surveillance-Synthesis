@@ -171,6 +171,7 @@ class env:
         x = s2x([s], m, m, 1)
         i = int(x[-1,0])
         j = int(x[-1,1])
+        print('s = {}\n m = {}\nv = {}\nx = {}\ni = {}\nj = {}'.format(s,self.m,v,x,i,j))
         wP = np.ones((m,m)) 
         wP[i,j] = 0
         wP = travel_time(wP, v * self.speed, dx = 1)

@@ -5,6 +5,7 @@ import time
 import copy
 import itertools
 import Control_Parser
+import numpy as np
 
 def powerset(s):
     x = len(s)
@@ -183,10 +184,12 @@ def userControlled_imperfect_sensor(filename,gwg,partitionGrid,moveobstacles,all
         allstates[n] = copy.deepcopy(belief_gridstates.keys())
         for i in range(belief_ncols * belief_nrows, belief_ncols * belief_nrows + len(beliefcombs[n])):
             allstates[n].append(i)
-        allstates.append(len(allstates))  # nominal state if target leaves allowed region
+        allstates[n].append(len(allstates[n]))  # nominal state if target leaves allowed region
     gwg.colorstates = [set(), set()]
     gridstate = copy.deepcopy(moveobstacles[0])
+
     while True:
+        gazeboOutput(gwg)
         gwg.colorstates[0] = set()
         for n in range(gwg.nagents):
             agentstate[n] = automaton[n][automaton_state[n]]['State']['s']
@@ -212,6 +215,7 @@ def userControlled_imperfect_sensor(filename,gwg,partitionGrid,moveobstacles,all
         nexttargetstate = [None]*gwg.nagents
         nextagentstate = [None]*gwg.nagents
         nextstate = [None]*gwg.nagents
+        targetcanbeinregion=[None]*gwg.nagents
         for m in activeagents:
             nextstatedirn[m] = {'W':set(),'E':set(),'S':set(),'N':set(),'R':set(),'Belief':set(),'Out':None,'Incoming':set()}
             nextstates = automaton[m][automaton_state[m]]['Successors']
@@ -232,7 +236,15 @@ def userControlled_imperfect_sensor(filename,gwg,partitionGrid,moveobstacles,all
                         nextstatedirn[m]['N'].add(n)
                     if gwg.moveobstacles[0] in belief_gridstates[nexttargetstate[m]]:
                         nextstatedirn[m]['R'].add(n)
-
+        for m in set(range(gwg.nagents)) - activeagents:
+            nextstatedirn[m] = {'W':None,'E':None,'S':None,'N':None,'R':None,'Belief':set(),'Out':None,'Incoming':set()}
+            nextstates = automaton[m][automaton_state[m]]['Successors']
+            for n in nextstates:
+                nexttargetstate[m]= automaton[m][n]['State']['st']
+                if nexttargetstate[m] == allstates[m][-1]:
+                    nextstatedirn[m]['Out'] = n
+                elif nexttargetstate[m] in allowed_states[m]:
+                    nextstatedirn[m]['Incoming'].add(n)
         while True:
             while None in nextstate:
                 while True:
@@ -240,31 +252,38 @@ def userControlled_imperfect_sensor(filename,gwg,partitionGrid,moveobstacles,all
                     if arrow != None:
                         break
                 for m in activeagents:
-                    if len(nextstatedirn[m]['Belief'])>0 and len(nextstatedirn[m][arrow])==0:
+                    if len(nextstatedirn[m]['Belief'])>0 and len(nextstatedirn[m][arrow])==0 and nextstatedirn[m]['Belief']!={nextstatedirn[m]['Out']}:
                         # sensor = input('Measured by sensor? ')
+                        targetcanbeinregion[m] = True
                         sensor = 0
+                    elif nextstatedirn[m]['Belief']=={nextstatedirn[m]['Out']}:
+                        sensor = 0
+                        targetcanbeinregion[m] = False
                     else:
                         sensor = 1
+                        targetcanbeinregion[m] = True
                     sensor = sensor>0
                     nextstate[m] = nextstatedirn[m][arrow]
                     gridstate = getGridstate(gwg, moveobstacles[0], arrow)
                     if not sensor:
-                        if gridstate in allowed_states[m]:
+                        if targetcanbeinregion[m]:
                             for n in nextstatedirn[m]['Belief']:
                                 nexttargetstate[m] = automaton[m][n]['State']['st']
-                                nextbeliefs = beliefcombs[m][nexttargetstate[m] - belief_ncols*belief_nrows]
-                                if any(gridstate in partitionGrid[m][x] for x in nextbeliefs):
-                                    nextstate[m] = copy.deepcopy(n)
-                                    nextagentstate[m] = automaton[m][n]['State']['s']
-                                    invisstates = invisibilityset[m][nextagentstate[m]]
-                                    visstates = set(xstates) - invisstates
-                                    if nexttargetstate[m] >= belief_ncols*belief_nrows:
-                                        beliefcombstate = beliefcombs[m][nexttargetstate[m] - belief_ncols*belief_nrows]
-                                        beliefstates = set()
-                                        for b in beliefcombstate:
-                                            beliefstates = beliefstates.union(partitionGrid[m][b])
-                                        truebeliefstates[m] = beliefstates - beliefstates.intersection(visstates)
-
+                                if nexttargetstate[m] != allstates[m][-1]:
+                                    nextbeliefs = beliefcombs[m][nexttargetstate[m] - belief_ncols*belief_nrows]
+                                    if any(gridstate in partitionGrid[m][x] for x in nextbeliefs):
+                                        nextstate[m] = copy.deepcopy(n)
+                                        nextagentstate[m] = automaton[m][n]['State']['s']
+                                        invisstates = invisibilityset[m][nextagentstate[m]]
+                                        visstates = set(xstates) - invisstates
+                                        if nexttargetstate[m] >= belief_ncols*belief_nrows:
+                                            beliefcombstate = beliefcombs[m][nexttargetstate[m] - belief_ncols*belief_nrows]
+                                            beliefstates = set()
+                                            for b in beliefcombstate:
+                                                beliefstates = beliefstates.union(partitionGrid[m][b])
+                                            truebeliefstates[m] = beliefstates - beliefstates.intersection(visstates)
+                                    # elif nexttargetstate[m]!=allstates[m][-1]: #Target has left region
+                                    #     nextstate[m] = nextstatedirn[m]['Out']
                                         # print 'True belief set is ', truebeliefstates
                                         # print 'Size of true belief set is ', len(truebeliefstates)
                         else:
@@ -336,6 +355,7 @@ def userControlled_imperfect_sensor_Permissive(automaton,gwg,partitionGrid,moveo
     allow = True
     tstep = folderlocn[1]
     for desiredstate in agentpath:
+        gazeboOutput(gwg)
         if not allow:
             return gwg,tstep
         gwg.colorstates[0] = set()
@@ -503,16 +523,16 @@ def userControlled_imperfect_sensor_Permissive(automaton,gwg,partitionGrid,moveo
 
 def gazeboOutput(gwg):
     for n in range(len(gwg.current)):
-        filename = 'statehistory{}.txt'.format(n)
+        filename = 'statehistorypatrol{}.txt'.format(n)
         with open(filename,'a') as file:
             s = gwg.current[n]
-            file.write('{},{}\n'.format(gwg.coords(s)[1],gwg.coords(s)[0]))
+            file.write('{},{}\n'.format(gwg.current[n],gwg.moveobstacles[0]))
             file.close()
-    for n in range(len(gwg.moveobstacles)):
-        filename = 'statehistory_target{}.txt'.format(n)
-        y_obs,x_obs = gwg.coords(gwg.moveobstacles[n])
-        with open(filename,'a') as file:
-            file.write('{},{}\n'.format(x_obs,y_obs))
-            file.close()
+    # for n in range(len(gwg.moveobstacles)):
+    #     filename = 'statehistory_target{}.txt'.format(n)
+    #     y_obs,x_obs = gwg.coords(gwg.moveobstacles[n])
+    #     with open(filename,'a') as file:
+    #         file.write('{},{}\n'.format(x_obs,y_obs))
+    #         file.close()
 
 
