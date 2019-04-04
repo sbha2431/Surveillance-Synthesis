@@ -1,0 +1,188 @@
+from gridworld import *
+import argparse
+# import write_structured_slugs_copy_2
+import write_structured_slugs
+import compute_all_vis
+import cv2
+import visibility
+import os
+import subprocess
+import time
+import copy
+import simulateController as Simulator
+import itertools
+import Control_Parser
+import compute_reach_path
+import pickle
+def parseArguments():
+    #### From --> https://stackoverflow.com/questions/28479543/run-python-script-with-some-of-the-argument-that-are-optional
+    #### EVEN BETTER --> https://pymotw.com/2/argparse/
+    # # Create argument parser
+    parser = argparse.ArgumentParser()
+
+    # # Positional mandatory arguments
+    # parser.add_argument("SynthesisFlag", help="Include this boolean to run the synthesis", type=bool)
+
+    #  # Optional arguments
+    parser.add_argument("-synF", action='store_true', default=False, dest='synFlag',
+                        help="Include this boolean to run the synthesis")
+    parser.add_argument("-cvF", action='store_true', default=False, dest='visFlag',
+                        help="Include this boolean to compute belief visibility of the target")
+    parser.add_argument("-noVisF", action='store_false', default=True, dest='noVisFlag',
+                        help="Include this boolean to run synthesis without any target vision")
+
+    # # Parse arguments
+    args = parser.parse_args()
+
+    return args
+
+
+if __name__ == '__main__':
+
+    args = parseArguments()
+    print 'Synthesis Flag is: ', args.synFlag
+    if not args.noVisFlag:
+        print '--> Target has No vision'
+    if args.noVisFlag and args.synFlag:
+        print 'Compute Vision Flag is: ', args.visFlag
+
+    then = time.time()
+    # Make sure to state the agent and the target far enough from each other such that the games initial conditions do not violate safety.
+    mapname = 'unnamed'
+    # mapname = 'chicago4_45_2454_5673_map'
+    scale = (32,32)
+    mapfilename = ['figures/' + mapname + '.png',scale]
+
+    image = cv2.imread(mapfilename[0], cv2.IMREAD_GRAYSCALE)  # 0 if obstacle, 255 if free space
+    h, w = image.shape[:2]
+    partition = dict()
+    ################### Single Partition ###################
+    partition[0] = range(h*w)
+
+    folder_locn = 'Examples/'
+    example_name = 'exploration_permissive_v4'
+    trial_name = folder_locn+example_name
+    # trial_name = 'NO_VIS_roomPerpendicularHallway_10x15'
+
+    ######################################
+
+
+    # partition[0] = set(range(nrows*ncols))
+    ######################################
+    slugs = '/home/sudab/Applications/slugs/src/slugs'
+    outfile = trial_name + '.json'
+    infile = copy.deepcopy(trial_name)
+    gwfile = folder_locn+'/figs/gridworldfig_' + example_name + '.png'
+    target_vis_file = trial_name + '.txt'
+    targets = [[]]
+    initial = [100]
+    nagents = 1
+    moveobstacles = [150]
+    gwg = Gridworld(mapfilename,targets=targets,initial=initial,moveobstacles=moveobstacles)
+    gwg.colorstates = [set(), set()]
+    gwg.render()
+    gwg.draw_state_labels()
+    gwg.save(gwfile)
+
+    pg = [partition]
+    allowed_states = [[None]] * nagents
+    allowed_states[0] = list(set(range(gwg.nstates)) - set(gwg.obstacles))
+
+    visdist = [3500]
+    target_vis_dist = 2
+    vel = [4]
+    invisibilityset = []
+    sensor_uncertainty = 1
+    filename = []
+    for n in range(gwg.nagents):
+        obj = compute_all_vis.img2obj(image)
+        # compute visibility for each state
+        iset = compute_all_vis.compute_visibility_for_all(obj, h, w, radius=visdist[n])
+        belief_ncols = gwg.ncols - sensor_uncertainty + 1
+        # iset = dict.fromkeys(set(gwg.states), frozenset({gwg.nrows * gwg.ncols + 1}))
+        # for s in set(gwg.states):
+        #     iset[s] = visibility.invis(gwg, s, visdist[n])
+        #     if s in gwg.obstacles:
+        #         iset[s] = {-1}
+        belief_nrows = gwg.nrows - sensor_uncertainty + 1
+        sensor_uncertain_dict = dict.fromkeys(range(belief_ncols * belief_nrows))
+        for i in range(belief_nrows):
+            for j in range(belief_ncols):
+                belief_gridstate = i * belief_ncols + j
+                sensor_uncertain_dict[belief_gridstate] = set()
+                for srow in range(i, i + sensor_uncertainty):
+                    for scol in range(j, j + sensor_uncertainty):
+                        gridstate = gwg.rcoords((srow, scol))
+                        uset = list(itertools.product(['E', 'S', 'R'], repeat=sensor_uncertainty-1))
+                        for u in uset:
+                            snext = copy.deepcopy(i * gwg.ncols + j)
+                            for v in range(sensor_uncertainty-1):
+                                act = u[v]
+                                snext = np.nonzero(gwg.prob[act][snext])[0][0]
+                            # if gridstate not in iset[belief_gridstate]:
+                            sensor_uncertain_dict[belief_gridstate].add(snext)
+                        # sensor_uncertain_dict[belief_gridstate].add(gridstate)
+
+        invisibilityset.append(iset)
+        filename.append(outfile)
+        print 'output file: ', outfile
+        print 'input file name:', infile
+        # Do the synthesis if asked
+        if args.synFlag:
+            write_structured_slugs.write_to_slugs_imperfect_sensor(infile, gwg, initial[n], moveobstacles[0], iset,
+                                                                   targets[n], vel[n], visdist[n], allowed_states[n],
+                                                                   [],
+                                                                   pg[n], belief_safety=1, belief_liveness=0,
+                                                                   target_reachability=False,
+                                                                   sensor_uncertainty=sensor_uncertainty,
+                                                                   sensor_uncertain_dict=sensor_uncertain_dict)
+
+            # write_structured_slugs.write_to_slugs_part_dist(infile, gwg, initial[n], moveobstacles[0], iset, [], targets[n], vel[n],
+            #                          visdist[n], allowed_states[n],[], pg[n], belief_safety=1, belief_liveness=0,
+            #                          target_reachability=False,
+            #                          target_has_vision=False, target_vision_dist=1.1, filename_target_vis=None,
+            #                          compute_vis_flag=False)
+
+            print ('Converting input file...')
+            os.system('python compiler.py ' + infile + '.structuredslugs > ' + infile + '.slugsin')
+            print('Computing controller...')
+            # sp = subprocess.Popen(slugs + ' --explicitStrategy --jsonOutput ' + infile + '.slugsin > ' + outfile,
+            #                       shell=True, stdout=subprocess.PIPE)
+            sp = subprocess.Popen(slugs + ' --extractExplicitPermissiveStrategy ' + infile + '.slugsin > ' + outfile,
+                                  shell=True, stdout=subprocess.PIPE)
+            sp.wait()
+
+    # automaton = write_structured_slugs.parseJson(outfile)
+    # print(automaton)
+
+    now = time.time()
+    print('Synthesis took ', now - then, ' seconds')
+    # simulator_with_orientation.userControlled_partition_dist(filename,gwg,pg,moveobstacles,allowed_states,invisibilityset,visset_target)
+    # Control_Parser.parseJson(outfile, outfilename='Example_Perm_readable')
+    # automaton = Control_Parser.parsePermissiveStrategy('Examples/exploration_permissive_v4.strategy')
+    # pickle_out = open("Examples/exploration_permissive_v4.pickle", "wb")
+    # pickle.dump(automaton, pickle_out)
+    # pickle_out.close()
+    pickle_in = open("Examples/exploration_permissive.pickle", "rb")
+    automaton = pickle.load(pickle_in)
+    t = 1
+    tstep = 0
+
+    e = compute_reach_path.env(mapfilename[0], vP=vel[0]-1)  # this should only be done once to initialize map
+    num_free_states = (e.phi>0).sum()
+    vis_ratio = []  # a list keep track of ratio of visible to free space
+    while True:
+
+        print('Computing path to new vantage point')
+        path = e.compute_reach_gain_path(gwg.current[0], gwg.moveobstacles[0])[1:]
+
+        I,J = np.where(e.slidingVis > 0)  # subscripts of visible regions (change to ==0 for occluded)
+        short_term_vis = (I*w + J).tolist() # list of visible indices in short term visibility
+        vis_ratio.append( len(I)*1.0/num_free_states)
+        print(path)
+        gwg ,tstep= Simulator.userControlled_imperfect_sensor_Permissive([automaton], gwg, pg, moveobstacles, allowed_states, invisibilityset,
+                                                  sensor_uncertain_dict, sensor_uncertainty,path,(folder_locn,tstep))
+        gwfile = folder_locn + 'figs/gridworldfig_' + example_name + str(t) + '.png'
+        gwg.save(gwfile)
+        t += 1
+    print('This is the visibility ratio: ', vis_ratio)
