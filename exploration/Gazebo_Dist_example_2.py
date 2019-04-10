@@ -25,7 +25,7 @@ def parseArguments():
     # parser.add_argument("SynthesisFlag", help="Include this boolean to run the synthesis", type=bool)
 
     #  # Optional arguments
-    parser.add_argument("-synF", action='store_true', default=True, dest='synFlag',
+    parser.add_argument("-synF", action='store_true', default=False, dest='synFlag',
                         help="Include this boolean to run the synthesis")
     parser.add_argument("-cvF", action='store_true', default=False, dest='visFlag',
                         help="Include this boolean to compute belief visibility of the target")
@@ -62,16 +62,18 @@ if __name__ == '__main__':
 
     ######################################
     folder_locn = 'Examples/'
-    example_name = 'Example_Dist_Gazebo_2'
+    example_name = 'Example_Dist_Gazebo_2_safety'
     trial_name = folder_locn + example_name
+    version = '01'
     slugs = '/home/sudab/Applications/slugs/src/slugs'
+    save_to_Gazebo = True
     outfile = trial_name + '.json'
     infile = copy.deepcopy(trial_name)
     gwfile = folder_locn + '/figs/gridworldfig_' + example_name + '.png'
     target_vis_file = trial_name + '.txt'
-    nagents = 1
-    targets = [[1026],[],[],[],[]]
-    initial = [797]
+    nagents = 2
+    targets = [[],[]]#[[946],[538],[],[],[]]
+    initial = [797,777]
     moveobstacles = [637]
     gwg = Gridworld(filename,nagents=nagents, targets=targets, initial=initial, moveobstacles=moveobstacles)
     gwg.colorstates = [set(), set()]
@@ -82,12 +84,14 @@ if __name__ == '__main__':
     allowed_states = [[None]] * nagents
     pg = [[None]]*nagents
     #################### Agent allowed states ####################
-    allowed_states[0] = set.union(*[set(range(586 + x * scale[0], 586 + x * scale[0] + 14)) for x in range(25)]).union(*[set(range(961 + x * scale[0], 961 + x * scale[0] + 24)) for x in range(15)])  - set(gwg.obstacles)
-
+    allowed_states[0] = set.union(*[set(range(586 + x * scale[0], 586 + x * scale[0] + 14)) for x in range(25)]).union(*[set(range(961 + x * scale[0], 961 + x * scale[0] + 25)) for x in range(15)])  - set(gwg.obstacles)
+    allowed_states[1] = set(gwg.states) - allowed_states[0] - set(gwg.obstacles)
     ################### Single Partition ###################
     pg[0] = {0: set.union(*[set(range(586 + x * scale[0], 586 + x * scale[0] + 14)) for x in range(11)])  - set(gwg.obstacles), 1: set.union(*[set(range(1026 + x * scale[0], 1026 + x * scale[0] + 14)) for x in range(14)])  - set(gwg.obstacles),
              2: set.union(*[set(range(961 + x * scale[0], 961 + x * scale[0] + 12)) for x in range(15)])  - set(gwg.obstacles), 3: set.union(*[set(range(973 + x * scale[0], 973 + x * scale[0] + 13)) for x in range(15)])  - set(gwg.obstacles)}
-    # pg[1] = {0:allowed_states[1]}
+    pg[1] = {0: set.union(*[set(range(361 + x * scale[0], 361 + x * scale[0] + 14)) for x in range(14)])  - set(gwg.obstacles), 1: set.union(*[set(range(335 + x * scale[0], 335 + x * scale[0] + 11)) for x in range(16)])  - set(gwg.obstacles),
+             2: set.union(*[set(range(66 + x * scale[0], 66 + x * scale[0] + 13)) for x in range(12)])  - set(gwg.obstacles), 3: set.union(*[set(range(52 + x * scale[0], 52 + x * scale[0] + 14)) for x in range(7)])  - set(gwg.obstacles),
+             4: set.union(*[set(range(41 + x * scale[0], 41 + x * scale[0] + 11)) for x in range(7)]) - set(gwg.obstacles)}
     # pg[2] = {0: allowed_states[2]}
     # pg[3] = {0:allowed_states[3]}
     #########################################################
@@ -102,7 +106,7 @@ if __name__ == '__main__':
     # partition[7] = set(range(h*w)) - partition[0] - partition[1] - partition[2] - partition[3]- partition[4] - partition[5] - partition[6]
     # partition[0] = set(range(nrows*ncols))
 
-    visdist = [10,3,3500,3500]
+    visdist = [10,10,3500,3500]
     target_vis_dist = 2
     vel = [2,2,2,2]
     invisibilityset = []
@@ -130,7 +134,7 @@ if __name__ == '__main__':
                     # sensor_uncertain_dict[belief_gridstate].add(gridstate)
     ##############################################################################################
 
-    for n in [0]:
+    for n in [0,1]:
         obj = compute_all_vis.img2obj(image)
         # compute visibility for each state
         iset = compute_all_vis.compute_visibility_for_all(obj, h, w, radius=visdist[n])
@@ -145,7 +149,7 @@ if __name__ == '__main__':
         # pickle_in = open("Examples/iset_gazeboexample.pickle", "rb")
         # iset = pickle.load(pickle_in)
         invisibilityset.append(iset)
-        outfile = trial_name+'agent'+str(n)+'.json'
+        outfile = trial_name+'agent'+str(n) +'.json'
         filename.append(outfile)
         print 'output file: ', outfile
         print 'input file name:', infile
@@ -155,7 +159,7 @@ if __name__ == '__main__':
                                                                    targets[n], vel[n], visdist[n], allowed_states[n],
                                                                    [],
                                                                    pg[n], belief_safety=1, belief_liveness=0,
-                                                                   target_reachability=True,
+                                                                   target_reachability=False,
                                                                    sensor_uncertainty=sensor_uncertainty,
                                                                    sensor_uncertain_dict=sensor_uncertain_dict)
 
@@ -179,9 +183,24 @@ if __name__ == '__main__':
 
     now = time.time()
     print('Synthesis took ', now - then, ' seconds')
-    # simulator_with_orientation.userControlled_partition_dist(filename,gwg,pg,moveobstacles,allowed_states,invisibilityset,visset_target)
-    # Control_Parser.parseJson(outfile, outfilename='Example2_perm_readable')
-    # Control_Parser.parsePermissiveStrategy(outfile, outfilename='Example1_Perm_readable.json')
+
+    #### Save for gazebo
+    if save_to_Gazebo:
+
+        allowedstates = dict()
+        for n in range(gwg.nagents):
+            keyname = 'uav'+str(n+1)
+            allowedstates[keyname] = copy.deepcopy(allowed_states[n])
+
+        pickle_out = open(folder_locn + 'GazeboFiles/' + 'iset_' + version +'.pickle', "wb")
+        pickle.dump(iset, pickle_out)
+
+        pickle_out = open(folder_locn + 'GazeboFiles/' + 'allowedstates_' + version +'.pickle', "wb")
+        pickle.dump(iset, pickle_out)
+        gwg.save(folder_locn+'GazeboFiles/gridfig'+version)
+    #### Run Simulation
     Simulator.userControlled_imperfect_sensor(filename, gwg, pg, moveobstacles, allowed_states, invisibilityset,
-                                              sensor_uncertain_dict, sensor_uncertainty)
+                                              sensor_uncertain_dict, sensor_uncertainty,saveImage=folder_locn+'GazeboFiles/safetyExperiment_2agents/trajectory_figs')
+
+
 
