@@ -191,7 +191,7 @@ class Gridworld():
 
     ## Everything from here onwards is for creating the image
 
-    def render(self, size=20):
+    def render(self, size=6):
         self.height = self.nrows * size + self.nrows + 1
         self.width = self.ncols * size + self.ncols + 1
         self.size = size

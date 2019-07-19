@@ -13,7 +13,7 @@ import simulateController as Simulator
 import itertools
 import Control_Parser
 import compute_reach_path
-import pickle
+import cPickle as pickle
 def parseArguments():
     #### From --> https://stackoverflow.com/questions/28479543/run-python-script-with-some-of-the-argument-that-are-optional
     #### EVEN BETTER --> https://pymotw.com/2/argparse/
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     gwg = Gridworld(mapfilename,targets=targets,initial=initial,moveobstacles=moveobstacles)
     gwg.colorstates = [set(), set()]
     gwg.render()
-    gwg.draw_state_labels()
+    # gwg.draw_state_labels()
     gwg.save(gwfile)
 
     pg = [partition]

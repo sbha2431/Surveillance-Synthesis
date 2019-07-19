@@ -106,5 +106,5 @@ def computeAutomatonState(automaton,currstate,state):
     return allautstates
 
 if __name__ == '__main__':
-    parseJson('Examples/exploration_permissive4.strategy','Examples/exploration_permissive4.json')
+    parseJson('Examples/scheduler.json','Examples/scheduler_readable.json')
     # Put in the file location of the json file and the desired output file name here

@@ -9,12 +9,12 @@ import os
 import subprocess
 import time
 import copy
-import pickle
+import cPickle as pickle
 from tqdm import *
 import simulateController as Simulator
 import itertools
 import Control_Parser
-
+import json
 def parseArguments():
     #### From --> https://stackoverflow.com/questions/28479543/run-python-script-with-some-of-the-argument-that-are-optional
     #### EVEN BETTER --> https://pymotw.com/2/argparse/
@@ -49,9 +49,9 @@ if __name__ == '__main__':
 
     then = time.time()
     # Make sure to state the agent and the target far enough from each other such that the games initial conditions do not violate safety.
-    mapname = 'Q_building_3'
+    mapname = '3ne'
     # mapname = 'chicago4_45_2454_5673_map'
-    scale = (40,40)
+    scale = (int(80*2.6),80)
     filename = ['figures/' + mapname + '.pgm',scale,cv2.INTER_LINEAR_EXACT]
 
     image = cv2.imread(filename[0], cv2.IMREAD_GRAYSCALE)  # 0 if obstacle, 255 if free space
@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
     ######################################
     folder_locn = 'Examples/'
-    example_name = 'Example_Dist_Gazebo_2_safety'
+    example_name = 'Example_Dist_Gazebo_3_liveness'
     trial_name = folder_locn + example_name
     version = '01'
     slugs = '/home/sudab/Applications/slugs/src/slugs'
@@ -72,13 +72,13 @@ if __name__ == '__main__':
     gwfile = folder_locn + '/figs/gridworldfig_' + example_name + '.png'
     target_vis_file = trial_name + '.txt'
     nagents = 2
-    targets = [[],[]]#[[946],[538],[],[],[]]
-    initial = [797,777]
-    moveobstacles = [637]
+    targets = [[857],[634],[],[],[]]
+    initial = [1103,797]
+    moveobstacles = [1140]
     gwg = Gridworld(filename,nagents=nagents, targets=targets, initial=initial, moveobstacles=moveobstacles)
     gwg.colorstates = [set(), set()]
     gwg.render()
-    gwg.draw_state_labels()
+    # gwg.draw_state_labels()
     gwg.save(gwfile)
     partition = dict()
     allowed_states = [[None]] * nagents
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     # partition[7] = set(range(h*w)) - partition[0] - partition[1] - partition[2] - partition[3]- partition[4] - partition[5] - partition[6]
     # partition[0] = set(range(nrows*ncols))
 
-    visdist = [10,10,3500,3500]
+    visdist = [10,20,3500,3500]
     target_vis_dist = 2
     vel = [2,2,2,2]
     invisibilityset = []
@@ -158,8 +158,8 @@ if __name__ == '__main__':
             write_structured_slugs.write_to_slugs_imperfect_sensor(infile, gwg, initial[n], moveobstacles[0], iset,
                                                                    targets[n], vel[n], visdist[n], allowed_states[n],
                                                                    [],
-                                                                   pg[n], belief_safety=1, belief_liveness=0,
-                                                                   target_reachability=False,
+                                                                   pg[n], belief_safety=0, belief_liveness=10,
+                                                                   target_reachability=True,
                                                                    sensor_uncertainty=sensor_uncertainty,
                                                                    sensor_uncertain_dict=sensor_uncertain_dict)
 
@@ -186,21 +186,28 @@ if __name__ == '__main__':
 
     #### Save for gazebo
     if save_to_Gazebo:
+        isetlist = dict()
+        for s1 in iset.keys():
+            isetlist[s1] = copy.deepcopy(list(iset[s1]))
+        # j = json.dumps(isetlist, indent=1)
+        # f = open(folder_locn + 'GazeboFiles/' + 'iset_' + version +'.json', "wb")
+        # print >> f, j
+        # f.close()
+        with open(folder_locn + 'GazeboFiles/' + 'iset_' + version +'.json', "wb") as fp:
+            json.dump(isetlist, fp)
 
         allowedstates = dict()
         for n in range(gwg.nagents):
             keyname = 'uav'+str(n+1)
-            allowedstates[keyname] = copy.deepcopy(allowed_states[n])
+            allowedstates[keyname] = copy.deepcopy(list(allowed_states[n]))
 
-        pickle_out = open(folder_locn + 'GazeboFiles/' + 'iset_' + version +'.pickle', "wb")
-        pickle.dump(iset, pickle_out)
-
-        pickle_out = open(folder_locn + 'GazeboFiles/' + 'allowedstates_' + version +'.pickle', "wb")
-        pickle.dump(iset, pickle_out)
+        with open(folder_locn + 'GazeboFiles/' + 'allowedstates_' + version +'.json', "wb") as fp:
+            json.dump(allowedstates, fp)
         gwg.save(folder_locn+'GazeboFiles/gridfig'+version)
+
     #### Run Simulation
     Simulator.userControlled_imperfect_sensor(filename, gwg, pg, moveobstacles, allowed_states, invisibilityset,
-                                              sensor_uncertain_dict, sensor_uncertainty,saveImage=folder_locn+'GazeboFiles/safetyExperiment_2agents/trajectory_figs')
+                                              sensor_uncertain_dict, sensor_uncertainty,saveImage=folder_locn+'GazeboFiles/livenessExperiment_1agent/trajectory_figs/t-')
 
 
 

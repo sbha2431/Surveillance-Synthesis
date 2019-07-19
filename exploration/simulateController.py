@@ -196,8 +196,9 @@ def userControlled_imperfect_sensor(filename,gwg,partitionGrid,moveobstacles,all
             agentstate[n] = automaton[n][automaton_state[n]]['State']['s']
             targetstate[n] = automaton[n][automaton_state[n]]['State']['st']
             print 'Agent state is ', agentstate
-            gwg.colorstates[0] = gwg.colorstates[0].union(invisibilityset[n][agentstate[n]].intersection(allowed_states[n]))
-
+            # gwg.colorstates[0] = gwg.colorstates[0].union(invisibilityset[n][agentstate[n]].intersection(allowed_states[n]))
+            gwg.colorstates[0] = gwg.colorstates[0].union(
+                invisibilityset[n][agentstate[n]])
         activeagents = set(range(gwg.nagents))
         for n in range(gwg.nagents):
             if targetstate[n] == allstates[n][-1]:
@@ -213,7 +214,7 @@ def userControlled_imperfect_sensor(filename,gwg,partitionGrid,moveobstacles,all
         # gwg.draw_state_labels()
 
         if saveImage!=None:
-            gwg.save(saveImage+str(timestep))
+            gwg.save(saveImage+str(timestep)+'.png')
             timestep+=1
 
         nextstatedirn = [dict()]*gwg.nagents
